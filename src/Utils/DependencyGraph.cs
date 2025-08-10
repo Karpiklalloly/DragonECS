@@ -210,7 +210,6 @@ namespace DCFApixels.DragonECS.Core
                 }
                 for (int i = 0; i < graph.GetVertexInfosCount(); i++)
                 {
-                    ref var otherLayerInfo = ref graph.GetVertexInfo(i);
                     AddVertexByID(GetVertexID(graph.GetVertexFromID((VertexID)i)));
                 }
             }

@@ -550,7 +550,6 @@ namespace DCFApixels.DragonECS
         private MemoryAllocator.Handler _bufferHandler;
         private MemoryAllocator.Handler _chunckBufferHandler;
 
-        private readonly bool _isSingleIncPoolWithEntityStorage;
         private readonly bool _isHasAnyEntityStorage;
         private readonly EcsMaskFlags _maskFlags;
 
@@ -593,8 +592,6 @@ namespace DCFApixels.DragonECS
                 _isHasAnyEntityStorage |= pool is IEntityStorage;
                 if (_isHasAnyEntityStorage) { break; }
             }
-
-            _isSingleIncPoolWithEntityStorage = Mask.Excs.Length <= 0 && Mask.Anys.Length <= 0 && Mask.Incs.Length == 1;
         }
         unsafe ~EcsMaskIterator()
         {

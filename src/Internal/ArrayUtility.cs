@@ -261,15 +261,6 @@ namespace DCFApixels.DragonECS.Core.Internal
     }
     internal static unsafe class UnmanagedArrayUtility
     {
-        private static class MetaCache<T>
-        {
-            public readonly static int Size;
-            static MetaCache()
-            {
-                T def = default;
-                Size = Marshal.SizeOf(def);
-            }
-        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T* New<T>(int capacity) where T : unmanaged
         {

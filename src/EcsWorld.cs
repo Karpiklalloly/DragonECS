@@ -694,9 +694,7 @@ namespace DCFApixels.DragonECS
             {
                 poolIdsPtr = UnmanagedArrayUtility.New<int>(count);
             }
-
-            UnsafeArray<int> ua = UnsafeArray<int>.Manual(poolIdsPtr, count);
-
+            
             GetComponentTypeIDsFor_Internal(fromEntityID, poolIdsPtr, count);
             for (int i = 0; i < count; i++)
             {

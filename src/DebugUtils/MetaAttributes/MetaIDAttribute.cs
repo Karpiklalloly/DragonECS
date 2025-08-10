@@ -76,7 +76,6 @@ namespace DCFApixels.DragonECS
             }
 
             byte* bytes = stackalloc byte[BYTES];
-            Span<byte> x = new Span<byte>(bytes, BYTES);
             long* bytesLong = (long*)bytes;
             uint* bytesUInt = (uint*)bytes;
             bytesLong[0] = DateTime.Now.Ticks;

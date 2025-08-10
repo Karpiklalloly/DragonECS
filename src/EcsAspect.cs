@@ -365,19 +365,6 @@ namespace DCFApixels.DragonECS
         }
         #endregion
 
-        #region Combined
-        private readonly struct Combined
-        {
-            public readonly EcsAspect aspect;
-            public readonly int order;
-            public Combined(EcsAspect aspect, int order)
-            {
-                this.aspect = aspect;
-                this.order = order;
-            }
-        }
-        #endregion
-
         #region Template
         public virtual void Apply(short worldID, int entityID)
         {

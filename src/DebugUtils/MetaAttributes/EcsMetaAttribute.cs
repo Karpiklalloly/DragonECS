@@ -18,7 +18,6 @@ namespace DCFApixels.DragonECS.Core
             {
                 _splitBuffer = new string[128];
             }
-            int length = value.Length;
             int bufferIndex = 0;
             fixed (char* ptr = value)
             {

@@ -19,9 +19,6 @@ namespace DCFApixels.DragonECS
         private const short GEN_STATUS_SEPARATOR = 0;
         private const short GEN_WAKEUP_MASK = 0x7fff;
         private const short GEN_SLEEP_MASK = ~GEN_WAKEUP_MASK;
-
-        private const int DEL_ENT_BUFFER_SIZE_OFFSET = 5;
-        private const int DEL_ENT_BUFFER_MIN_SIZE = 64;
         #endregion
 
         private static EcsWorld[] _worlds = Array.Empty<EcsWorld>();

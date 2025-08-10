@@ -304,12 +304,6 @@ namespace DCFApixels.DragonECS.Core.Internal
         #endregion
 
         #region Utils
-        private enum IDState : byte
-        {
-            Free = 0,
-            Reserved = 1,
-            Used = 2,
-        }
         private static class ThrowHalper
         {
             [MethodImpl(MethodImplOptions.NoInlining)]

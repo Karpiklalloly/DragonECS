@@ -170,8 +170,6 @@ namespace DCFApixels.DragonECS.Core.Internal
 #endif
     internal static unsafe class UnsafeArraySortHalperX<T> where T : unmanaged
     {
-        private const int IntrosortSizeThreshold = 16;
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SwapIfGreater<TComparer>(T* items, ref TComparer comparer, int i, int j) where TComparer : IStructComparer<T>
         {
