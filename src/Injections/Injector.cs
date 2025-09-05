@@ -11,7 +11,7 @@ namespace DCFApixels.DragonECS
 {
     public class Injector : IInjector
     {
-        private readonly EcsPipeline _pipeline;
+        private readonly IEcsPipeline _pipeline;
         private readonly Dictionary<Type, InjectionBranch> _branches = new Dictionary<Type, InjectionBranch>(32);
         private readonly Dictionary<Type, InjectionNodeBase> _nodes = new Dictionary<Type, InjectionNodeBase>(32);
         private ReadOnlySpan<InjectionNodeBase> GetNodes(Type type)
@@ -65,13 +65,13 @@ namespace DCFApixels.DragonECS
         }
         #endregion
 
-        public EcsPipeline Pipelie
+        public IEcsPipeline Pipelie
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _pipeline; }
         }
 
-        public Injector(EcsPipeline pipeline)
+        public Injector(IEcsPipeline pipeline)
         {
             _pipeline = pipeline;
         }
@@ -218,7 +218,7 @@ namespace DCFApixels.DragonECS
                     _nodes.Add(item);
                 }
             }
-            public void InitInjectTo(Injector injector, EcsPipeline pipeline)
+            public void InitInjectTo(Injector injector, IEcsPipeline pipeline)
             {
 #if DEBUG
                 HashSet<Type> requiredInjectionTypes = new HashSet<Type>();
@@ -270,7 +270,7 @@ namespace DCFApixels.DragonECS
                 }
 #endif
             }
-            public void InjectTo(Injector injector, EcsPipeline pipeline)
+            public void InjectTo(Injector injector, IEcsPipeline pipeline)
             {
                 var monoWorldProcess = pipeline.GetProcess<IMonoWorldInject>(); // TODO Проверить IMonoWorldInject
                 foreach (var monoWorldSystem in monoWorldProcess)

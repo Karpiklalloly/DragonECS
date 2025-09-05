@@ -19,7 +19,7 @@ namespace DCFApixels.DragonECS
     {
         [DataMember] public string[] layers;
         [DataMember] public Record[] records;
-        void IEcsModule.Import(EcsPipeline.Builder b)
+        void IEcsModule.Import(IEcsPipelineBuilder b)
         {
             b.Layers.MergeWith(layers);
             foreach (var s in records)

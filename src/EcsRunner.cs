@@ -22,7 +22,7 @@ namespace DCFApixels.DragonECS
         //добавить инъекцию в раннеры
         public abstract class EcsRunner
         {
-            internal abstract void Init_Internal(EcsPipeline source);
+            internal abstract void Init_Internal(IEcsPipeline source);
 
             #region CheckRunnerValide
             public static void CheckRunnerTypeIsValide(Type runnerType, Type processInterfaceType)
@@ -72,7 +72,7 @@ namespace DCFApixels.DragonECS
         [MetaID("DragonECS_E49B557C92010E46DF1602972BC988BC")]
         public interface IEcsRunner : IEcsProcess
         {
-            EcsPipeline Pipeline { get; }
+            IEcsPipeline Pipeline { get; }
             Type Interface { get; }
             EcsProcessRaw ProcessRaw { get; }
             bool IsEmpty { get; }
@@ -86,12 +86,12 @@ namespace DCFApixels.DragonECS
         public abstract class EcsRunner<TProcess> : EcsRunner, IEcsRunner, IEcsProcess
             where TProcess : IEcsProcess
         {
-            private EcsPipeline _source;
+            private IEcsPipeline _source;
             private EcsProcess<TProcess> _process;
             private bool _isInit = false;
 
             #region Properties
-            public EcsPipeline Pipeline
+            public IEcsPipeline Pipeline
             {
                 get { return _source; }
             }
@@ -115,7 +115,7 @@ namespace DCFApixels.DragonECS
 
             #region Constructor Init OnSetup
             public EcsRunner() { }
-            internal override sealed void Init_Internal(EcsPipeline source)
+            internal override sealed void Init_Internal(IEcsPipeline source)
             {
                 if (_isInit)
                 {

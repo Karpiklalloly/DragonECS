@@ -10,7 +10,7 @@ using System.Runtime.CompilerServices;
 namespace DCFApixels.DragonECS.Core.Internal
 {
     [DebuggerDisplay("Count: {Count}")]
-    internal struct StructList<T>
+    public struct StructList<T>
     {
         internal readonly static bool _IsManaged = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
 

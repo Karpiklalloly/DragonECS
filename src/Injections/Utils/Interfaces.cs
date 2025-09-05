@@ -21,7 +21,7 @@ namespace DCFApixels.DragonECS
     [MetaName(nameof(OnInitInjectionComplete))]
     [MetaColor(MetaColor.DragonRose)]
     [MetaGroup(EcsConsts.PACK_GROUP, EcsConsts.DI_GROUP)]
-    [MetaDescription(EcsConsts.AUTHOR, "The process interface that signals the completion of injection during pipeline initialization via the EcsPipeline.Init() method.")]
+    [MetaDescription(EcsConsts.AUTHOR, "The process interface that signals the completion of injection during pipeline initialization via the IEcsPipeline.Init() method.")]
     [MetaID("DragonECS_05C3537C920155AFC044C900E4F17D90")]
     public interface IOnInitInjectionComplete : IEcsProcess
     {

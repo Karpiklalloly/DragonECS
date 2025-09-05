@@ -18,11 +18,11 @@ namespace DCFApixels.DragonECS.Core
         #endregion
 
         private readonly IDependencyGraph<string> _graph;
-        private readonly EcsPipeline.Builder _pipelineBuilder;
+        private readonly IEcsPipelineBuilder _pipelineBuilder;
         //private readonly string _preBeginLayer;
 
         #region Properties
-        public EcsPipeline.Builder Back
+        public IEcsPipelineBuilder Back
         {
             get { return _pipelineBuilder; }
         }
@@ -37,12 +37,12 @@ namespace DCFApixels.DragonECS.Core
         #endregion
 
         #region Constructors
-        public LayersMap(IDependencyGraph<string> graph, EcsPipeline.Builder pipelineBuilder)
+        public LayersMap(IDependencyGraph<string> graph, IEcsPipelineBuilder pipelineBuilder)
         {
             _graph = graph;
             _pipelineBuilder = pipelineBuilder;
         }
-        public LayersMap(IDependencyGraph<string> graph, EcsPipeline.Builder pipelineBuilder, string preBeginlayer, string beginlayer, string basicLayer, string endLayer, string postEndLayer)
+        public LayersMap(IDependencyGraph<string> graph, IEcsPipelineBuilder pipelineBuilder, string preBeginlayer, string beginlayer, string basicLayer, string endLayer, string postEndLayer)
         {
             _graph = graph;
             _pipelineBuilder = pipelineBuilder;
@@ -109,26 +109,26 @@ namespace DCFApixels.DragonECS.Core
         public struct MoveHandler
         {
             private readonly IDependencyGraph<string> _graph;
-            private readonly EcsPipeline.Builder _pipelineBuilder;
+            private readonly IEcsPipelineBuilder _pipelineBuilder;
             private readonly VertexID _layerID;
             private readonly IEnumerable<string> _layersRange;
 
             #region Properties
-            public EcsPipeline.Builder Back
+            public IEcsPipelineBuilder Back
             {
                 get { return _pipelineBuilder; }
             }
             #endregion
 
             #region Constructors
-            public MoveHandler(IDependencyGraph<string> graph, EcsPipeline.Builder pipelineBuilder, VertexID id)
+            public MoveHandler(IDependencyGraph<string> graph, IEcsPipelineBuilder pipelineBuilder, VertexID id)
             {
                 _graph = graph;
                 _pipelineBuilder = pipelineBuilder;
                 _layerID = id;
                 _layersRange = null;
             }
-            public MoveHandler(IDependencyGraph<string> graph, EcsPipeline.Builder pipelineBuilder, IEnumerable<string> layersRange)
+            public MoveHandler(IDependencyGraph<string> graph, IEcsPipelineBuilder pipelineBuilder, IEnumerable<string> layersRange)
             {
                 _graph = graph;
                 _pipelineBuilder = pipelineBuilder;
@@ -255,49 +255,49 @@ namespace DCFApixels.DragonECS.Core
 
         #region Obsolete
         [Obsolete("Use " + nameof(LayersMap) + ".Add(layer).Before(targetLayer).Back;")]
-        public EcsPipeline.Builder Insert(string targetLayer, string newLayer)
+        public IEcsPipelineBuilder Insert(string targetLayer, string newLayer)
         {
             Add(newLayer).Before(targetLayer);
             return _pipelineBuilder;
         }
         [Obsolete("Use " + nameof(LayersMap) + ".Add(layer).After(targetLayer).Back;")]
-        public EcsPipeline.Builder InsertAfter(string targetLayer, string newLayer)
+        public IEcsPipelineBuilder InsertAfter(string targetLayer, string newLayer)
         {
             Add(newLayer).After(targetLayer);
             return _pipelineBuilder;
         }
         [Obsolete("Use " + nameof(LayersMap) + ".Move(layer).Before(targetLayer).Back;")]
-        public EcsPipeline.Builder Move(string targetLayer, string newLayer)
+        public IEcsPipelineBuilder Move(string targetLayer, string newLayer)
         {
             Move(newLayer).Before(targetLayer);
             return _pipelineBuilder;
         }
         [Obsolete("Use " + nameof(LayersMap) + ".Move(layer).After(targetLayer).Back;")]
-        public EcsPipeline.Builder MoveAfter(string targetLayer, string newLayer)
+        public IEcsPipelineBuilder MoveAfter(string targetLayer, string newLayer)
         {
             Move(newLayer).After(targetLayer);
             return _pipelineBuilder;
         }
         [Obsolete("Use " + nameof(LayersMap) + ".Add(layers).Before(targetLayer).Back;")]
-        public EcsPipeline.Builder Insert(string targetLayer, params string[] newLayers)
+        public IEcsPipelineBuilder Insert(string targetLayer, params string[] newLayers)
         {
             Add(newLayers).Before(targetLayer);
             return _pipelineBuilder;
         }
         [Obsolete("Use " + nameof(LayersMap) + ".Add(layers).After(targetLayer).Back;")]
-        public EcsPipeline.Builder InsertAfter(string targetLayer, params string[] newLayers)
+        public IEcsPipelineBuilder InsertAfter(string targetLayer, params string[] newLayers)
         {
             Add(newLayers).After(targetLayer);
             return _pipelineBuilder;
         }
         [Obsolete("Use " + nameof(LayersMap) + ".Move(layers).Before(targetLayer).Back;")]
-        public EcsPipeline.Builder Move(string targetLayer, params string[] movingLayers)
+        public IEcsPipelineBuilder Move(string targetLayer, params string[] movingLayers)
         {
             Move(movingLayers).Before(targetLayer);
             return _pipelineBuilder;
         }
         [Obsolete("Use " + nameof(LayersMap) + ".Move(layers).After(targetLayer).Back;")]
-        public EcsPipeline.Builder MoveAfter(string targetLayer, params string[] movingLayers)
+        public IEcsPipelineBuilder MoveAfter(string targetLayer, params string[] movingLayers)
         {
             Move(movingLayers).After(targetLayer);
             return _pipelineBuilder;

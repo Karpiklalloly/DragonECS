@@ -21,10 +21,25 @@ namespace DCFApixels.DragonECS
     {
         AddParams AddParams { get; }
     }
+    
+    public interface IEcsPipelineBuilder
+    {
+        StructList<InitDeclaredRunner> InitDeclaredRunners { get; }
+        InitInjectionList Injections { get; }
+        LayersMap Layers { get; } 
+        Configurator Configs { get; }
+        
+        IEcsPipeline Build();
+        IEcsPipelineBuilder Add(IEcsProcess system, AddParams parameters);
+        IEcsPipelineBuilder Add(object raw, AddParams parameters);
+        IEcsPipelineBuilder AddRunner<TRunner>() where TRunner : EcsRunner, IEcsRunner, new();
+        IEcsPipelineBuilder AddModule(IEcsModule module, AddParams parameters);
+        void MergeWith(IEcsPipelineBuilder other);
+    }
 
     public sealed partial class EcsPipeline
     {
-        public partial class Builder : IEcsModule
+        public partial class Builder : IEcsModule, IEcsPipelineBuilder
         {
             private SystemNode[] _systemNodes = new SystemNode[256];
             private int _startIndex = -1;
@@ -36,13 +51,17 @@ namespace DCFApixels.DragonECS
             private readonly Dictionary<string, LayerSystemsList> _layerLists = new Dictionary<string, LayerSystemsList>(8);
             private readonly StructList<InitDeclaredRunner> _initDeclaredRunners = new StructList<InitDeclaredRunner>(4);
 
-            public readonly LayersMap Layers;
-            public readonly InitInjectionList Injections;
-            public readonly Configurator Configs;
+            public StructList<InitDeclaredRunner> InitDeclaredRunners => _initDeclaredRunners;
+            public LayersMap Layers => _layers;
+            public InitInjectionList Injections => _injections;
+            public Configurator Configs => _configs;
 
             private AddParams _defaultAddParams = new AddParams(BASIC_LAYER, 0, false);
 
             private HashSet<Type> _uniqueSystemsSet = new HashSet<Type>();
+            private InitInjectionList _injections;
+            private LayersMap _layers;
+            private Configurator _configs;
 
             #region Properties
             //private ReadOnlySpan<SystemNode> SystemRecords
@@ -55,28 +74,28 @@ namespace DCFApixels.DragonECS
             public Builder(IConfigContainerWriter config = null)
             {
                 if (config == null) { config = new ConfigContainer(); }
-                Configs = new Configurator(config, this);
+                _configs = new Configurator(config, this);
 
                 var injectorBuilder = new Injector.InjectionList();
-                Injections = new InitInjectionList(injectorBuilder, this);
-                Injections.AddNode<object>();
-                Injections.AddNode<EcsWorld>();
-                Injections.AddNode<EcsAspect>();
-                Injections.AddNode<EcsPipeline>();
+                _injections = new InitInjectionList(injectorBuilder, this);
+                _injections.AddNode<object>();
+                _injections.AddNode<EcsWorld>();
+                _injections.AddNode<EcsAspect>();
+                _injections.AddNode<IEcsPipeline>();
 
                 var graph = new DependencyGraph<string>(BASIC_LAYER);
-                Layers = new LayersMap(graph, this, PRE_BEGIN_LAYER, BEGIN_LAYER, BASIC_LAYER, END_LAYER, POST_END_LAYER);
+                _layers = new LayersMap(graph, this, PRE_BEGIN_LAYER, BEGIN_LAYER, BASIC_LAYER, END_LAYER, POST_END_LAYER);
             }
             #endregion
 
             #region Add IEcsProcess
-            public Builder Add(IEcsProcess system, AddParams parameters)
+            public IEcsPipelineBuilder Add(IEcsProcess system, AddParams parameters)
             {
                 return AddSystem_Internal(system, parameters);
             }
             private IEcsProcess _systemModule;
             private bool _systemModuleAdded;
-            private Builder AddSystem_Internal(IEcsProcess system, AddParams settedAddParams)
+            private IEcsPipelineBuilder AddSystem_Internal(IEcsProcess system, AddParams settedAddParams)
             {
                 AddParams prms = _defaultAddParams;
                 if (system is IEcsDefaultAddParams overrideInterface)
@@ -178,7 +197,7 @@ namespace DCFApixels.DragonECS
             #endregion
 
             #region AddModule IEcsModule
-            public Builder AddModule(IEcsModule module, AddParams parameters)
+            public IEcsPipelineBuilder AddModule(IEcsModule module, AddParams parameters)
             {
                 if (module is IEcsProcess system)
                 {
@@ -186,7 +205,7 @@ namespace DCFApixels.DragonECS
                 }
                 return AddModule_Internal(module, parameters);
             }
-            private Builder AddModule_Internal(IEcsModule module, AddParams settedAddParams)
+            private IEcsPipelineBuilder AddModule_Internal(IEcsModule module, AddParams settedAddParams)
             {
                 if (settedAddParams.flags.IsNoImport() == false)
                 {
@@ -202,17 +221,17 @@ namespace DCFApixels.DragonECS
                     _defaultAddParams = oldDefaultAddParams;
                 }
 
-                Injections.Inject(module);
+                _injections.Inject(module);
                 return this;
             }
             #endregion
 
             #region Add Raw
-            public Builder Add(object raw, AddParams parameters)
+            public IEcsPipelineBuilder Add(object raw, AddParams parameters)
             {
                 return AddRaw_Internal(raw, parameters);
             }
-            private Builder AddRaw_Internal(object raw, AddParams settedAddParams)
+            private IEcsPipelineBuilder AddRaw_Internal(object raw, AddParams settedAddParams)
             {
                 switch (raw)
                 {
@@ -224,19 +243,19 @@ namespace DCFApixels.DragonECS
             #endregion
 
             #region Add other
-            public Builder AddRunner<TRunner>() where TRunner : EcsRunner, IEcsRunner, new()
+            public IEcsPipelineBuilder AddRunner<TRunner>() where TRunner : EcsRunner, IEcsRunner, new()
             {
                 _initDeclaredRunners.Add(new InitDeclaredRunner<TRunner>());
                 return this;
             }
-            void IEcsModule.Import(Builder into)
+            void IEcsModule.Import(IEcsPipelineBuilder into)
             {
                 into.MergeWith(this);
             }
-            private void MergeWith(Builder other)
+            public void MergeWith(IEcsPipelineBuilder other)
             {
                 Injections.MergeWith(other.Injections);
-                foreach (var declaredRunners in other._initDeclaredRunners)
+                foreach (var declaredRunners in other.InitDeclaredRunners)
                 {
                     _initDeclaredRunners.Add(declaredRunners);
                 }
@@ -273,7 +292,7 @@ namespace DCFApixels.DragonECS
                 _freeNodesCount++;
                 _systemNodesCount--;
             }
-            public Builder Remove<TSystem>()
+            public IEcsPipelineBuilder Remove<TSystem>()
             {
                 _uniqueSystemsSet.Remove(typeof(TSystem));
 
@@ -305,7 +324,7 @@ namespace DCFApixels.DragonECS
 #if DEBUG
             private static EcsProfilerMarker _buildMarker = new EcsProfilerMarker("EcsPipeline.Build");
 #endif
-            public EcsPipeline Build()
+            public IEcsPipeline Build()
             {
 #if DEBUG
                 _buildMarker.Begin();
@@ -368,7 +387,7 @@ namespace DCFApixels.DragonECS
                     }
                 }
 
-                EcsPipeline pipeline = new EcsPipeline((ReadOnlySpan<IEcsProcess>)allSystems, Configs.Instance.GetContainer(), Injections.Instance);
+                EcsPipeline pipeline = new EcsPipeline((ReadOnlySpan<IEcsProcess>)allSystems, Configs.Instance.GetContainer(), _injections.Instance);
                 foreach (var item in _initDeclaredRunners)
                 {
                     item.Declare(pipeline);
@@ -380,80 +399,6 @@ namespace DCFApixels.DragonECS
             }
             #endregion
 
-            #region InitDeclaredRunner
-            private abstract class InitDeclaredRunner
-            {
-                public abstract void Declare(EcsPipeline pipeline);
-            }
-            private class InitDeclaredRunner<T> : InitDeclaredRunner where T : EcsRunner, IEcsRunner, new()
-            {
-                public override void Declare(EcsPipeline pipeline)
-                {
-                    pipeline.GetRunnerInstance<T>();
-                }
-            }
-            #endregion
-
-            #region InitInjector
-            public readonly struct InitInjectionList
-            {
-                private readonly Builder _pipelineBuilder;
-                public readonly Injector.InjectionList Instance;
-                public InitInjectionList(Injector.InjectionList instance, Builder pipelineBuilder)
-                {
-                    Instance = instance;
-                    _pipelineBuilder = pipelineBuilder;
-                }
-                public Builder AddNode<T>()
-                {
-                    Instance.AddNode<T>();
-                    return _pipelineBuilder;
-                }
-                public Builder Inject<T>(T obj)
-                {
-                    Instance.Inject(obj);
-                    return _pipelineBuilder;
-                }
-                public Builder Extract<T>(ref T obj)
-                {
-                    Instance.Extract(ref obj);
-                    return _pipelineBuilder;
-                }
-                public Builder Merge(Injector.InjectionList other)
-                {
-                    Instance.MergeWith(other);
-                    return _pipelineBuilder;
-                }
-                public Builder MergeWith(InitInjectionList other)
-                {
-                    Instance.MergeWith(other.Instance);
-                    return _pipelineBuilder;
-                }
-            }
-            #endregion
-
-            #region Configurator
-            public readonly struct Configurator
-            {
-                private readonly IConfigContainerWriter _configs;
-                private readonly Builder _builder;
-                public Configurator(IConfigContainerWriter configs, Builder builder)
-                {
-                    _configs = configs;
-                    _builder = builder;
-                }
-                public IConfigContainerWriter Instance
-                {
-                    get { return _configs; }
-                }
-                public Builder Set<T>(T value)
-                {
-                    _configs.Set(value);
-                    return _builder;
-                }
-            }
-
-            #endregion
 
             #region LayerSystemsList
             private class LayerSystemsList
@@ -607,28 +552,94 @@ namespace DCFApixels.DragonECS
             [Obsolete("Use LayersMap")]
             public class LayerList : LayersMap
             {
-                //public LayerList(Builder source, string basicLayerName) : base(source, basicLayerName) { }
-                //public LayerList(Builder source, string preBeginlayer, string beginlayer, string basicLayer, string endLayer, string postEndLayer) : base(source, preBeginlayer, beginlayer, basicLayer, endLayer, postEndLayer) { }
-                public LayerList(IDependencyGraph<string> graph, Builder pipelineBuilder) : base(graph, pipelineBuilder)
+                public LayerList(IDependencyGraph<string> graph, IEcsPipelineBuilder pipelineBuilder) : base(graph, pipelineBuilder)
                 {
                 }
             }
             #endregion
         }
     }
+    
+    public readonly struct InitInjectionList
+    {
+        private readonly IEcsPipelineBuilder _pipelineBuilder;
+        public readonly Injector.InjectionList Instance;
+        public InitInjectionList(Injector.InjectionList instance, IEcsPipelineBuilder pipelineBuilder)
+        {
+            Instance = instance;
+            _pipelineBuilder = pipelineBuilder;
+        }
+        public IEcsPipelineBuilder AddNode<T>()
+        {
+            Instance.AddNode<T>();
+            return _pipelineBuilder;
+        }
+        public IEcsPipelineBuilder Inject<T>(T obj)
+        {
+            Instance.Inject(obj);
+            return _pipelineBuilder;
+        }
+        public IEcsPipelineBuilder Extract<T>(ref T obj)
+        {
+            Instance.Extract(ref obj);
+            return _pipelineBuilder;
+        }
+        public IEcsPipelineBuilder Merge(Injector.InjectionList other)
+        {
+            Instance.MergeWith(other);
+            return _pipelineBuilder;
+        }
+        public IEcsPipelineBuilder MergeWith(InitInjectionList other)
+        {
+            Instance.MergeWith(other.Instance);
+            return _pipelineBuilder;
+        }
+    }
+    
+    public readonly struct Configurator
+    {
+        private readonly IConfigContainerWriter _configs;
+        private readonly IEcsPipelineBuilder _builder;
+        public Configurator(IConfigContainerWriter configs, IEcsPipelineBuilder builder)
+        {
+            _configs = configs;
+            _builder = builder;
+        }
+        public IConfigContainerWriter Instance
+        {
+            get { return _configs; }
+        }
+        public IEcsPipelineBuilder Set<T>(T value)
+        {
+            _configs.Set(value);
+            return _builder;
+        }
+    }
+    
+    public abstract class InitDeclaredRunner
+    {
+        public abstract void Declare(IEcsPipeline pipeline);
+    }
+    public class InitDeclaredRunner<T> : InitDeclaredRunner where T : EcsRunner, IEcsRunner, new()
+    {
+        public override void Declare(IEcsPipeline pipeline)
+        {
+            pipeline.GetRunnerInstance<T>();
+        }
+    }
 
     public static partial class EcsPipelineBuilderExtensions
     {
         #region Simple Builders
-        public static EcsPipeline ToPipeline(this IEcsModule module)
+        public static IEcsPipeline ToPipeline(this IEcsModule module)
         {
             return EcsPipeline.New().Add(module).Build();
         }
-        public static EcsPipeline ToPipelineAndInit(this IEcsModule module)
+        public static IEcsPipeline ToPipelineAndInit(this IEcsModule module)
         {
             return EcsPipeline.New().Add(module).BuildAndInit();
         }
-        public static EcsPipeline ToPipeline(this IEnumerable<IEcsModule> modules)
+        public static IEcsPipeline ToPipeline(this IEnumerable<IEcsModule> modules)
         {
             var result = EcsPipeline.New();
             foreach (var module in modules)
@@ -637,7 +648,7 @@ namespace DCFApixels.DragonECS
             }
             return result.Build();
         }
-        public static EcsPipeline ToPipelineAndInit(this IEnumerable<IEcsModule> modules)
+        public static IEcsPipeline ToPipelineAndInit(this IEnumerable<IEcsModule> modules)
         {
             var result = modules.ToPipeline();
             result.Init();
@@ -647,62 +658,62 @@ namespace DCFApixels.DragonECS
 
         #region Add IEcsProcess
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder Add(this EcsPipeline.Builder self, IEcsProcess system)
+        public static IEcsPipelineBuilder Add(this IEcsPipelineBuilder self, IEcsProcess system)
         {
             return self.Add(system, AddParams.Default);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder Add(this EcsPipeline.Builder self, IEcsProcess system, string layerName)
+        public static IEcsPipelineBuilder Add(this IEcsPipelineBuilder self, IEcsProcess system, string layerName)
         {
             return self.Add(system, new AddParams(layerName: layerName));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder Add(this EcsPipeline.Builder self, IEcsProcess system, int sortOrder)
+        public static IEcsPipelineBuilder Add(this IEcsPipelineBuilder self, IEcsProcess system, int sortOrder)
         {
             return self.Add(system, new AddParams(sortOrder: sortOrder));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder Add(this EcsPipeline.Builder self, IEcsProcess system, bool isUnique)
+        public static IEcsPipelineBuilder Add(this IEcsPipelineBuilder self, IEcsProcess system, bool isUnique)
         {
             return self.Add(system, new AddParams(isUnique: isUnique));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder Add(this EcsPipeline.Builder self, IEcsProcess system, string layerName, int sortOrder)
+        public static IEcsPipelineBuilder Add(this IEcsPipelineBuilder self, IEcsProcess system, string layerName, int sortOrder)
         {
             return self.Add(system, new AddParams(layerName: layerName, sortOrder: sortOrder));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder Add(this EcsPipeline.Builder self, IEcsProcess system, string layerName, bool isUnique)
+        public static IEcsPipelineBuilder Add(this IEcsPipelineBuilder self, IEcsProcess system, string layerName, bool isUnique)
         {
             return self.Add(system, new AddParams(layerName: layerName, isUnique: isUnique));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder Add(this EcsPipeline.Builder self, IEcsProcess system, int sortOrder, bool isUnique)
+        public static IEcsPipelineBuilder Add(this IEcsPipelineBuilder self, IEcsProcess system, int sortOrder, bool isUnique)
         {
             return self.Add(system, new AddParams(sortOrder: sortOrder, isUnique: isUnique));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder Add(this EcsPipeline.Builder self, IEcsProcess system, string layerName, int sortOrder, bool isUnique)
+        public static IEcsPipelineBuilder Add(this IEcsPipelineBuilder self, IEcsProcess system, string layerName, int sortOrder, bool isUnique)
         {
             return self.Add(system, new AddParams(layerName: layerName, sortOrder: sortOrder, isUnique: isUnique));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder AddUnique(this EcsPipeline.Builder self, IEcsProcess system)
+        public static IEcsPipelineBuilder AddUnique(this IEcsPipelineBuilder self, IEcsProcess system)
         {
             return self.Add(system, new AddParams(isUnique: true));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder AddUnique(this EcsPipeline.Builder self, IEcsProcess system, string layerName)
+        public static IEcsPipelineBuilder AddUnique(this IEcsPipelineBuilder self, IEcsProcess system, string layerName)
         {
             return self.Add(system, new AddParams(layerName: layerName, isUnique: true));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder AddUnique(this EcsPipeline.Builder self, IEcsProcess system, int sortOrder)
+        public static IEcsPipelineBuilder AddUnique(this IEcsPipelineBuilder self, IEcsProcess system, int sortOrder)
         {
             return self.Add(system, new AddParams(sortOrder: sortOrder, isUnique: true));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder AddUnique(this EcsPipeline.Builder self, IEcsProcess system, string layerName, int sortOrder)
+        public static IEcsPipelineBuilder AddUnique(this IEcsPipelineBuilder self, IEcsProcess system, string layerName, int sortOrder)
         {
             return self.Add(system, new AddParams(layerName: layerName, sortOrder: sortOrder, isUnique: true));
         }
@@ -710,62 +721,62 @@ namespace DCFApixels.DragonECS
 
         #region AddModule IEcsModule
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder AddModule(this EcsPipeline.Builder self, IEcsModule module)
+        public static IEcsPipelineBuilder AddModule(this IEcsPipelineBuilder self, IEcsModule module)
         {
             return self.AddModule(module, AddParams.Default);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder AddModule(this EcsPipeline.Builder self, IEcsModule module, string layerName)
+        public static IEcsPipelineBuilder AddModule(this IEcsPipelineBuilder self, IEcsModule module, string layerName)
         {
             return self.AddModule(module, new AddParams(layerName: layerName));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder AddModule(this EcsPipeline.Builder self, IEcsModule module, int sortOrder)
+        public static IEcsPipelineBuilder AddModule(this IEcsPipelineBuilder self, IEcsModule module, int sortOrder)
         {
             return self.AddModule(module, new AddParams(sortOrder: sortOrder));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder AddModule(this EcsPipeline.Builder self, IEcsModule module, bool isUnique)
+        public static IEcsPipelineBuilder AddModule(this IEcsPipelineBuilder self, IEcsModule module, bool isUnique)
         {
             return self.AddModule(module, new AddParams(isUnique: isUnique));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder AddModule(this EcsPipeline.Builder self, IEcsModule module, string layerName, int sortOrder)
+        public static IEcsPipelineBuilder AddModule(this IEcsPipelineBuilder self, IEcsModule module, string layerName, int sortOrder)
         {
             return self.AddModule(module, new AddParams(layerName: layerName, sortOrder: sortOrder));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder AddModule(this EcsPipeline.Builder self, IEcsModule module, string layerName, bool isUnique)
+        public static IEcsPipelineBuilder AddModule(this IEcsPipelineBuilder self, IEcsModule module, string layerName, bool isUnique)
         {
             return self.AddModule(module, new AddParams(layerName: layerName, isUnique: isUnique));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder AddModule(this EcsPipeline.Builder self, IEcsModule module, int sortOrder, bool isUnique)
+        public static IEcsPipelineBuilder AddModule(this IEcsPipelineBuilder self, IEcsModule module, int sortOrder, bool isUnique)
         {
             return self.AddModule(module, new AddParams(sortOrder: sortOrder, isUnique: isUnique));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder AddModule(this EcsPipeline.Builder self, IEcsModule module, string layerName, int sortOrder, bool isUnique)
+        public static IEcsPipelineBuilder AddModule(this IEcsPipelineBuilder self, IEcsModule module, string layerName, int sortOrder, bool isUnique)
         {
             return self.AddModule(module, new AddParams(layerName: layerName, sortOrder: sortOrder, isUnique: isUnique));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder AddModuleUnique(this EcsPipeline.Builder self, IEcsModule module)
+        public static IEcsPipelineBuilder AddModuleUnique(this IEcsPipelineBuilder self, IEcsModule module)
         {
             return self.AddModule(module, new AddParams(isUnique: true));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder AddModuleUnique(this EcsPipeline.Builder self, IEcsModule module, string layerName)
+        public static IEcsPipelineBuilder AddModuleUnique(this IEcsPipelineBuilder self, IEcsModule module, string layerName)
         {
             return self.AddModule(module, new AddParams(layerName: layerName, isUnique: true));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder AddModuleUnique(this EcsPipeline.Builder self, IEcsModule module, int sortOrder)
+        public static IEcsPipelineBuilder AddModuleUnique(this IEcsPipelineBuilder self, IEcsModule module, int sortOrder)
         {
             return self.AddModule(module, new AddParams(sortOrder: sortOrder, isUnique: true));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder AddModuleUnique(this EcsPipeline.Builder self, IEcsModule module, string layerName, int sortOrder)
+        public static IEcsPipelineBuilder AddModuleUnique(this IEcsPipelineBuilder self, IEcsModule module, string layerName, int sortOrder)
         {
             return self.AddModule(module, new AddParams(layerName: layerName, sortOrder: sortOrder, isUnique: true));
         }
@@ -773,62 +784,62 @@ namespace DCFApixels.DragonECS
 
         #region Add Raw
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder Add(this EcsPipeline.Builder self, object raw)
+        public static IEcsPipelineBuilder Add(this IEcsPipelineBuilder self, object raw)
         {
             return self.Add(raw, AddParams.Default);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder Add(this EcsPipeline.Builder self, object raw, string layerName)
+        public static IEcsPipelineBuilder Add(this IEcsPipelineBuilder self, object raw, string layerName)
         {
             return self.Add(raw, new AddParams(layerName: layerName));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder Add(this EcsPipeline.Builder self, object raw, int sortOrder)
+        public static IEcsPipelineBuilder Add(this IEcsPipelineBuilder self, object raw, int sortOrder)
         {
             return self.Add(raw, new AddParams(sortOrder: sortOrder));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder Add(this EcsPipeline.Builder self, object raw, bool isUnique)
+        public static IEcsPipelineBuilder Add(this IEcsPipelineBuilder self, object raw, bool isUnique)
         {
             return self.Add(raw, new AddParams(isUnique: isUnique));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder Add(this EcsPipeline.Builder self, object raw, string layerName, int sortOrder)
+        public static IEcsPipelineBuilder Add(this IEcsPipelineBuilder self, object raw, string layerName, int sortOrder)
         {
             return self.Add(raw, new AddParams(layerName: layerName, sortOrder: sortOrder));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder Add(this EcsPipeline.Builder self, object raw, string layerName, bool isUnique)
+        public static IEcsPipelineBuilder Add(this IEcsPipelineBuilder self, object raw, string layerName, bool isUnique)
         {
             return self.Add(raw, new AddParams(layerName: layerName, isUnique: isUnique));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder Add(this EcsPipeline.Builder self, object raw, int sortOrder, bool isUnique)
+        public static IEcsPipelineBuilder Add(this IEcsPipelineBuilder self, object raw, int sortOrder, bool isUnique)
         {
             return self.Add(raw, new AddParams(sortOrder: sortOrder, isUnique: isUnique));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder Add(this EcsPipeline.Builder self, object raw, string layerName, int sortOrder, bool isUnique)
+        public static IEcsPipelineBuilder Add(this IEcsPipelineBuilder self, object raw, string layerName, int sortOrder, bool isUnique)
         {
             return self.Add(raw, new AddParams(layerName: layerName, sortOrder: sortOrder, isUnique: isUnique));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder AddUnique(this EcsPipeline.Builder self, object raw)
+        public static IEcsPipelineBuilder AddUnique(this IEcsPipelineBuilder self, object raw)
         {
             return self.Add(raw, new AddParams(isUnique: true));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder AddUnique(this EcsPipeline.Builder self, object raw, string layerName)
+        public static IEcsPipelineBuilder AddUnique(this IEcsPipelineBuilder self, object raw, string layerName)
         {
             return self.Add(raw, new AddParams(layerName: layerName, isUnique: true));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder AddUnique(this EcsPipeline.Builder self, object raw, int sortOrder)
+        public static IEcsPipelineBuilder AddUnique(this IEcsPipelineBuilder self, object raw, int sortOrder)
         {
             return self.Add(raw, new AddParams(sortOrder: sortOrder, isUnique: true));
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static EcsPipeline.Builder AddUnique(this EcsPipeline.Builder self, object raw, string layerName, int sortOrder)
+        public static IEcsPipelineBuilder AddUnique(this IEcsPipelineBuilder self, object raw, string layerName, int sortOrder)
         {
             return self.Add(raw, new AddParams(layerName: layerName, sortOrder: sortOrder, isUnique: true));
         }

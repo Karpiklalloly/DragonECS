@@ -168,16 +168,16 @@ struct PlayerTag : IEcsTagComponent {}
 ```c#
 class SomeSystem : IEcsPreInit, IEcsInit, IEcsRun, IEcsDestroy
 {
-    // Будет вызван один раз в момент работы EcsPipeline.Init() и до срабатывания IEcsInit.Init().
+    // Будет вызван один раз в момент работы IEcsPipeline.Init() и до срабатывания IEcsInit.Init().
     public void PreInit () { }
     
-    // Будет вызван один раз в момент работы EcsPipeline.Init() и после срабатывания IEcsPreInit.PreInit().
+    // Будет вызван один раз в момент работы IEcsPipeline.Init() и после срабатывания IEcsPreInit.PreInit().
     public void Init ()  { }
     
-    // Будет вызван один раз в момент работы EcsPipeline.Run().
+    // Будет вызван один раз в момент работы IEcsPipeline.Run().
     public void Run () { }
     
-    // Будет вызван один раз в момент работы EcsPipeline.Destroy().
+    // Будет вызван один раз в момент работы IEcsPipeline.Destroy().
     public void Destroy () { }
 }
 ```
@@ -187,7 +187,7 @@ class SomeSystem : IEcsPreInit, IEcsInit, IEcsRun, IEcsDestroy
 
 # Концепции фреймворка
 ## Пайплайн
-Контейнер и движок систем. Отвечает за настройку очереди вызова систем, предоставляет механизм для сообщений между системами и механизм внедрения зависимостей. Реализован в виде класса `EcsPipeline`.
+Контейнер и движок систем. Отвечает за настройку очереди вызова систем, предоставляет механизм для сообщений между системами и механизм внедрения зависимостей. Реализован в виде класса `IEcsPipeline`.
 ### Построение
 За построение пайплайна отвечает Builder. В Builder добавляются системы, а в конце строится пайплайн. Пример:
 ```c#
@@ -258,7 +258,7 @@ class SomeSystem : IEcsInject<SomeDataA>, IEcsRun
 using DCFApixels.DragonECS;
 class Module1 : IEcsModule 
 {
-    public void Import(EcsPipeline.Builder b) 
+    public void Import(IEcsPipelineBuilder b) 
     {
         b.Add(new System1());
         b.Add(new System2());

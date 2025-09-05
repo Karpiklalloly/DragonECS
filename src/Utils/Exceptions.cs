@@ -65,17 +65,17 @@ namespace DCFApixels.DragonECS.Core.Internal
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void Pipeline_MethodCalledAfterInitialisation(string methodName)
         {
-            throw new InvalidOperationException($"It is forbidden to call {methodName}, after initialization {nameof(EcsPipeline)}.");
+            throw new InvalidOperationException($"It is forbidden to call {methodName}, after initialization {nameof(IEcsPipeline)}.");
         }
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void Pipeline_MethodCalledBeforeInitialisation(string methodName)
         {
-            throw new InvalidOperationException($"It is forbidden to call {methodName}, before initialization {nameof(EcsPipeline)}.");
+            throw new InvalidOperationException($"It is forbidden to call {methodName}, before initialization {nameof(IEcsPipeline)}.");
         }
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void Pipeline_MethodCalledAfterDestruction(string methodName)
         {
-            throw new InvalidOperationException($"It is forbidden to call {methodName}, after destroying {nameof(EcsPipeline)}.");
+            throw new InvalidOperationException($"It is forbidden to call {methodName}, after destroying {nameof(IEcsPipeline)}.");
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

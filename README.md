@@ -173,16 +173,16 @@ Represent the core logic defining entity behaviors. They are implemented as user
 ```c#
 class SomeSystem : IEcsPreInit, IEcsInit, IEcsRun, IEcsDestroy
 {
-    // Called once during EcsPipeline.Init() and before IEcsInit.Init().
+    // Called once during IEcsPipeline.Init() and before IEcsInit.Init().
     public void PreInit () { }
     
-    // Called once during EcsPipeline.Init() and after IEcsPreInit.PreInit().
+    // Called once during IEcsPipeline.Init() and after IEcsPreInit.PreInit().
     public void Init ()  { }
     
-    // Called each time during EcsPipeline.Run().
+    // Called each time during IEcsPipeline.Run().
     public void Run () { }
     
-    // Called once during EcsPipeline.Destroy().
+    // Called once during IEcsPipeline.Destroy().
     public void Destroy () { }
 }
 ```
@@ -261,7 +261,7 @@ Groups of systems that implement a common feature can be grouped into modules an
 using DCFApixels.DragonECS;
 class Module1 : IEcsModule 
 {
-    public void Import(EcsPipeline.Builder b) 
+    public void Import(IEcsPipelineBuilder b) 
     {
         b.Add(new System1());
         b.Add(new System2());
@@ -318,7 +318,7 @@ Processes are queues of systems that implement a common interface, such as `IEcs
 <details>
 <summary>Built-in processes</summary>
  
-* `IEcsPreInit`, `IEcsInit`, `IEcsRun`, `IEcsDestroy` - lifecycle processes of `EcsPipeline`.
+* `IEcsPreInit`, `IEcsInit`, `IEcsRun`, `IEcsDestroy` - lifecycle processes of `IEcsPipeline`.
 * `IEcsInject<T>` - [Dependency Injection](#Dependency-Injection) processes.
 * `IOnInitInjectionComplete` - Similar to the [Dependency Injection](#Dependency-Injection) process, but signals the completion of initialization injection.
 

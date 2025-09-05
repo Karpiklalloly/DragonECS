@@ -172,16 +172,16 @@ struct PlayerTag : IEcsTagComponent {}
 ```c#
 class SomeSystem : IEcsPreInit, IEcsInit, IEcsRun, IEcsDestroy
 {
-    // 它将在 EcsPipeline.Init() 运行时和 Init 被调用之前被调用一次。
+    // 它将在 IEcsPipeline.Init() 运行时和 Init 被调用之前被调用一次。
     public void PreInit () { }
     
-    // 它将在 EcsPipeline.Init() 运行时和 PreInit 被调用之后被调用一次。
+    // 它将在 IEcsPipeline.Init() 运行时和 PreInit 被调用之后被调用一次。
     public void Init ()  { }
     
-    // 它将在 EcsPipeline.Run() 运行时调用一次。
+    // 它将在 IEcsPipeline.Run() 运行时调用一次。
     public void Run () { }
     
-    // 它将在 EcsPipeline.Destroy() 运行时调用一次。
+    // 它将在 IEcsPipeline.Destroy() 运行时调用一次。
     public void Destroy () { }
 }
 ```
@@ -257,7 +257,7 @@ class SomeSystem : IEcsInject<SomeDataA>, IEcsRun
 using DCFApixels.DragonECS;
 class Module1 : IEcsModule 
 {
-    public void Import(EcsPipeline.Builder b) 
+    public void Import(IEcsPipelineBuilder b) 
     {
         b.Add(new System1());
         b.Add(new System2()); 
@@ -858,7 +858,7 @@ using (_marker.Auto())
 为了增强框架的可扩展性，提供了其他工具。
 
 ## 配置
-`EcsWorld` 和 `EcsPipeline` 类的构造函数可以接受实现 `IConfigContainer` 或 `IConfigContainerWriter` 接口的配置容器。使用这些容器可以传递数据和依赖关系。内置的容器实现是 `ConfigContainer`，但也可以使用自定义的实现。</br>
+`EcsWorld` 和 `IEcsPipeline` 类的构造函数可以接受实现 `IConfigContainer` 或 `IConfigContainerWriter` 接口的配置容器。使用这些容器可以传递数据和依赖关系。内置的容器实现是 `ConfigContainer`，但也可以使用自定义的实现。</br>
 为世界使用配置容器的示例：
 ``` c#
 var configs = new ConfigContainer()

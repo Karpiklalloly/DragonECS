@@ -26,14 +26,28 @@ namespace DCFApixels.DragonECS
     [MetaID("DragonECS_F064557C92010419AB677453893D00AE")]
     public interface IEcsPipelineMember : IEcsProcess
     {
-        EcsPipeline Pipeline { get; set; }
+        IEcsPipeline Pipeline { get; set; }
+    }
+
+    public interface IEcsPipeline
+    {
+        IConfigContainer Configs { get; }
+        Injector Injector { get; }
+        EcsProcess<IEcsProcess> AllSystems { get; }
+        IReadOnlyDictionary<Type, IEcsRunner> AllRunners { get; }
+        bool IsInit { get; }
+        bool IsDestroyed { get; }
+
+        EcsProcess<T> GetProcess<T>() where T : IEcsProcess;
+        TRunner GetRunnerInstance<TRunner>() where TRunner : EcsRunner, IEcsRunner, new();
+        void Init();
     }
 
     [MetaColor(MetaColor.DragonRose)]
     [MetaGroup(PACK_GROUP, OTHER_GROUP)]
     [MetaDescription(AUTHOR, "Container and engine for systems. Responsible for configuring the execution order of systems, providing a mechanism for messaging between systems, and a dependency injection mechanism.")]
     [MetaID("DragonECS_9F5A557C9201C5C3D9BCAC2FF1CC07D4")]
-    public sealed partial class EcsPipeline
+    public sealed partial class EcsPipeline : IEcsPipeline
     {
         private readonly IConfigContainer _configs;
         private Injector _injector;
@@ -205,7 +219,7 @@ namespace DCFApixels.DragonECS
         {
             if (_isInit == true)
             {
-                EcsDebug.PrintWarning($"This {nameof(EcsPipeline)} has already been initialized");
+                EcsDebug.PrintWarning($"This {nameof(IEcsPipeline)} has already been initialized");
                 return;
             }
 #if DEBUG
@@ -259,13 +273,13 @@ namespace DCFApixels.DragonECS
     #region EcsModule
     public interface IEcsModule
     {
-        void Import(EcsPipeline.Builder b);
+        void Import(IEcsPipelineBuilder b);
     }
     public abstract class EcsModule<T> : IEcsModule, IInjectionUnit, IEcsDefaultAddParams
     {
         AddParams IEcsDefaultAddParams.AddParams { get { return AddParams; } }
         protected virtual AddParams AddParams { get { return default; } }
-        public abstract void Import(EcsPipeline.Builder b);
+        public abstract void Import(IEcsPipelineBuilder b);
         void IInjectionUnit.InitInjectionNode(InjectionGraph nodes) { nodes.AddNode<T>(); }
         public EcsModule() { if (GetType() != typeof(T)) { Throw.UndefinedException(); } }
     }
@@ -274,11 +288,11 @@ namespace DCFApixels.DragonECS
     #region Extensions
     public static partial class EcsPipelineExtensions
     {
-        public static bool IsNullOrDestroyed(this EcsPipeline self)
+        public static bool IsNullOrDestroyed(this IEcsPipeline self)
         {
             return self == null || self.IsDestroyed;
         }
-        public static EcsPipeline.Builder Add(this EcsPipeline.Builder self, IEnumerable<IEcsProcess> range, string layerName = null)
+        public static IEcsPipelineBuilder Add(this IEcsPipelineBuilder self, IEnumerable<IEcsProcess> range, string layerName = null)
         {
             foreach (var item in range)
             {
@@ -286,7 +300,7 @@ namespace DCFApixels.DragonECS
             }
             return self;
         }
-        public static EcsPipeline.Builder AddUnique(this EcsPipeline.Builder self, IEnumerable<IEcsProcess> range, string layerName = null)
+        public static IEcsPipelineBuilder AddUnique(this IEcsPipelineBuilder self, IEnumerable<IEcsProcess> range, string layerName = null)
         {
             foreach (var item in range)
             {
@@ -294,9 +308,9 @@ namespace DCFApixels.DragonECS
             }
             return self;
         }
-        public static EcsPipeline BuildAndInit(this EcsPipeline.Builder self)
+        public static IEcsPipeline BuildAndInit(this IEcsPipelineBuilder self)
         {
-            EcsPipeline result = self.Build();
+            IEcsPipeline result = self.Build();
             result.Init();
             return result;
         }

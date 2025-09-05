@@ -9,7 +9,7 @@ namespace DCFApixels.DragonECS
     [MetaName(nameof(PreInit))]
     [MetaColor(MetaColor.DragonRose)]
     [MetaGroup(EcsConsts.PACK_GROUP, EcsConsts.PROCESSES_GROUP)]
-    [MetaDescription(EcsConsts.AUTHOR, "The process to run when EcsPipeline.Init() is called. Before Init")]
+    [MetaDescription(EcsConsts.AUTHOR, "The process to run when IEcsPipeline.Init() is called. Before Init")]
     [MetaID("DragonECS_DE26527C92015AFDD4ECF4D81A4C946B")]
     public interface IEcsPreInit : IEcsProcess
     {
@@ -18,7 +18,7 @@ namespace DCFApixels.DragonECS
     [MetaName(nameof(Init))]
     [MetaColor(MetaColor.DragonRose)]
     [MetaGroup(EcsConsts.PACK_GROUP, EcsConsts.PROCESSES_GROUP)]
-    [MetaDescription(EcsConsts.AUTHOR, "The process to run when EcsPipeline.Init() is called. After PreInit")]
+    [MetaDescription(EcsConsts.AUTHOR, "The process to run when IEcsPipeline.Init() is called. After PreInit")]
     [MetaID("DragonECS_CC45527C9201DF82DCAAAEF33072F9EF")]
     public interface IEcsInit : IEcsProcess
     {
@@ -27,7 +27,7 @@ namespace DCFApixels.DragonECS
     [MetaName(nameof(Run))]
     [MetaColor(MetaColor.DragonRose)]
     [MetaGroup(EcsConsts.PACK_GROUP, EcsConsts.PROCESSES_GROUP)]
-    [MetaDescription(EcsConsts.AUTHOR, "The process to run when EcsPipeline.Run() is called.")]
+    [MetaDescription(EcsConsts.AUTHOR, "The process to run when IEcsPipeline.Run() is called.")]
     [MetaID("DragonECS_9654527C9201BE75546322B9BB03C131")]
     public interface IEcsRun : IEcsProcess
     {
@@ -43,7 +43,7 @@ namespace DCFApixels.DragonECS
     [MetaName(nameof(Destroy))]
     [MetaColor(MetaColor.DragonRose)]
     [MetaGroup(EcsConsts.PACK_GROUP, EcsConsts.PROCESSES_GROUP)]
-    [MetaDescription(EcsConsts.AUTHOR, "The process to run when EcsPipeline.Destroy() is called.")]
+    [MetaDescription(EcsConsts.AUTHOR, "The process to run when IEcsPipeline.Destroy() is called.")]
     [MetaID("DragonECS_4661527C9201EE669C6EB61B19899AE5")]
     public interface IEcsDestroy : IEcsProcess
     {
